@@ -51,6 +51,31 @@ def classify_columns(columns: list[str]) -> dict:
     return result
 
 
+# ─── Numeric value cleaning ─────────────────────────────────────────────────
+
+def clean_numeric(series: pd.Series) -> pd.Series:
+    """
+    Pre-process a column to handle common accounting formats before
+    passing to pd.to_numeric():
+      - "1,000.00"  → remove thousands-separator commas → 1000.0
+      - "(200)"     → accounting bracket notation → -200.0
+    Truly non-numeric values (e.g. "abc") are left as-is so
+    errors="coerce" can convert them to NaN downstream.
+    """
+    def _clean(val):
+        if pd.isna(val):
+            return val
+        s = str(val).strip()
+        # Bracket notation: (200) or (1,200.50) → negative number
+        if s.startswith("(") and s.endswith(")"):
+            s = "-" + s[1:-1]
+        # Remove thousands-separator commas: 1,000 → 1000
+        s = s.replace(",", "")
+        return s
+
+    return series.apply(_clean)
+
+
 # ─── Anomaly detection ───────────────────────────────────────────────────────
 
 def detect_anomalies(series: pd.Series, col_name: str, threshold_z: float = 3.0) -> list[dict]:
@@ -166,9 +191,9 @@ def audit(csv_path: str, threshold_z: float = 3.0) -> dict:
                     f"Expected names containing: {CREDIT_STRONG + CREDIT_WEAK}",
         }
 
-    # ── 3. Coerce to numeric ──
+    # ── 3. Clean accounting formats, then coerce to numeric ──
     for col in debit_cols + credit_cols:
-        df[col] = pd.to_numeric(df[col], errors="coerce")
+        df[col] = pd.to_numeric(clean_numeric(df[col]), errors="coerce")
 
     # ── 4. Missing value detection ──
     missing = []
