@@ -96,3 +96,4 @@ Claude Code will detect the skill from its name and description, run the script,
 ---
 
 ## Walkthrough Video
+https://youtu.be/TYaPjWPE7iM
