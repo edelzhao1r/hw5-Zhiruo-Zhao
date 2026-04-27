@@ -1,0 +1,5 @@
+Account,Debit,Credit
+Cash,"1,000",0
+Revenue,abc,1000
+Expense,(200),0
+Adjustment,,200
